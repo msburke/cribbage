@@ -6,7 +6,7 @@ def main():
     deck = make_card_list()  # make a deck of cards
     player_1 = input('What is your name? ')
     computer = 'Computer'
-    player_hand = draw_hand(player_1, deck)
+    player_hand = draw_hand(deck)
     show_player_hand(player_1, player_hand)
 
 
@@ -16,7 +16,7 @@ def show_player_hand(player, hand):
         print(' ' + cards)
 
 
-def draw_hand(player, deck):
+def draw_hand(deck):
     hand = []
     for i in range(6):
         draw = draw_card(deck)

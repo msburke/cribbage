@@ -6,10 +6,31 @@ WINNING = 121
 
 def main():
     deck = make_card_list()  # make a deck of cards
-    player_1 = input('What is your name? ')  # asks for a player's name to use during the game.
+    crib = []
+    player_1 = 'Matt'  # input('What is your name? ')  # asks for a player's name to use during the game.
     computer = 'Computer'  # sets the computer's name to Computer
     player_hand = draw_hand(deck)  # draws cards for the player's hand
-    show_player_hand(player_1, player_hand)  # shows the player's hand
+    computer_hand = draw_hand(deck)  # draws cards for the computer's hand
+    # show_player_hand(player_1, player_hand)  # shows the player's hand
+    discard_to_crib(player_hand, crib, False)  # ask player to discard two cards to the crib
+    discard_to_crib(computer_hand, crib, True)  # discards two random cards for the computer
+    show_player_hand(player_1, player_hand)
+    show_player_hand(computer, computer_hand)
+    show_player_hand('Crib', crib)
+
+
+def discard_to_crib(hand, crib, ai):  # takes in hand and crib for player/ai to discard 2 cards from hand to crib
+    #  TODO make this ai smarter?
+    if not ai:  # loop for if the player is human
+        for i in range(2):  # player will discard two cards
+            for num, card in enumerate(hand, start=1):  # numbers all of the cards
+                print(f'{num}. {card}')  # displays the numbers and the corresponding cards
+            discard = int(input('Select a card to place in the crib: '))  # prompts for discard
+            crib.append(hand.pop(discard-1))  # removes the card from the player's hand and puts it in the crib
+    else:  # for if player is computer (AI)
+        for i in range(2):  # to discard two cards
+            discard = random.randint(1, len(hand))  # pick a number between 1 and the length of the hand list
+            crib.append(hand.pop(discard - 1))  # removes the card from the corresponding index and puts it in the crib
 
 
 def show_player_hand(player, hand):  # takes the name of the player and the list of the cards in their hand

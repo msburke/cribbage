@@ -12,11 +12,17 @@ def main():
     player_hand = draw_hand(deck)  # draws cards for the player's hand
     computer_hand = draw_hand(deck)  # draws cards for the computer's hand
     # show_player_hand(player_1, player_hand)  # shows the player's hand
+    build_crib(player_hand, computer_hand, crib)  # clean up the crib building function. Both "players" in one
+    community = draw_card(deck)  # draw the community card
+    show_player_hand(player_1, player_hand)  # show the player hand
+    print('The community card is', community)  # show the community card
+    # show_player_hand(computer, computer_hand)
+    # show_player_hand('Crib', crib)
+
+
+def build_crib(player_hand, computer_hand, crib):
     discard_to_crib(player_hand, crib, False)  # ask player to discard two cards to the crib
     discard_to_crib(computer_hand, crib, True)  # discards two random cards for the computer
-    show_player_hand(player_1, player_hand)
-    show_player_hand(computer, computer_hand)
-    show_player_hand('Crib', crib)
 
 
 def discard_to_crib(hand, crib, ai):  # takes in hand and crib for player/ai to discard 2 cards from hand to crib

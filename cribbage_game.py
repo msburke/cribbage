@@ -14,7 +14,9 @@ def main():
     crib_holder = determine_first_crib(player_1, computer)  # randomly determine first crib
     build_crib(player_hand, computer_hand, crib)  # clean up the crib building function. Both "players" in one
     community = draw_card(deck)  # draw the community card
-    print('The community card is', community)  # show the community card
+    print('---------------------------------')
+    print(f'The community card is {community}')  # show the community card
+    print('---------------------------------')
     pegging(player_1, player_hand, computer, computer_hand, crib_holder)  # function for the pegging portion of scoring
 
 
@@ -30,12 +32,33 @@ def pegging(player, player_hand, computer, computer_hand, crib_holder):  # peggi
     peg_count = 0  # start with pegging score of 0
     player_peg = player_hand.copy()  # make a copy of the player's hand so we can remove things from it
     computer_peg = computer_hand.copy()  # make copy of the computer's hand
-    turn = get_next_turn(player, computer, crib_holder)  # player w/o crib goes first
+    turn = get_next_turn(player, False, computer, False, crib_holder)  # player w/o crib goes first
     while len(player_peg) > 0 or len(computer_peg) > 0:  # as long as there are cards in someone's hand
         while peg_count < 31:
-            peg_count += int(play_card(player, player_peg, computer, computer_peg, turn))  # add to peg count
-            print(f'Pegging count: {peg_count}')  # print the current peg count
-            turn = get_next_turn(player, computer, turn)  # switch players
+            """
+            Somewhere in this loop I need a way to keep track of 'go' values
+            Brainstorm:
+            player_go = False (set to true if the player returns go)
+            computer_go = False (set to true if the computer returns go)
+            While both are False, loop keeps going. If both are true, loop resets
+            If player or computer flagged True, their turns are skipped until both True
+            """
+            player_go = False
+            computer_go = False
+            while not player_go or not computer_go:
+                peg_return = play_card(player, player_peg, computer, computer_peg, turn)  # return int or 'go'
+                if type(peg_return) == str:  # checks for 'go' returned by player
+                    print(f'{turn} says "Go"')  # announces 'go'
+                    if turn == player:
+                        player_go = True
+                    else:
+                        computer_go = True
+                else:
+                    peg_count += peg_return  # if a card was returned, adds value to peg count
+                print('--------------------------')
+                print(f'Pegging count: {peg_count}')  # print the current peg count
+                print('--------------------------')
+                turn = get_next_turn(player, player_go, computer, computer_go, turn)  # switch players
         peg_count = 0  # reset pegging count after reaching 31
 
 
@@ -43,15 +66,27 @@ def play_card(player, player_hand, computer, computer_hand, turn):  # playing ca
     if turn == player:  # if it's the player's turn
         for num, card in enumerate(player_hand, start=1):  # show numbered list of cards
             print(f'{num}. {card}')
-        play = int(input(f'{player}, choose a card to play: '))  # ask for card to play
-        play_name = player_hand.pop(play - 1)  # remove card from hand, store name
-        value = get_card_value(player, play_name)  # function for getting the value of a card
-        return value
+        print()
+        play = input(f'{player}, choose a card to play: ')  # ask for card to play
+        if is_int(play):  # checks if the player input a value that can be an integer
+            play_name = player_hand.pop(int(play) - 1)  # remove card from hand, store name
+            value = get_card_value(player, play_name)  # function for getting the value of a card
+            return int(value)  # return the integer value of the card
+        else:  # if the player inputs a string
+            return 'Go'  # returns 'go'
     else:  # TODO make this smarter, as well
         play = random.randint(0, len(computer_hand) - 1)  # randomly draws a card to play from computer's hand
         play_name = computer_hand.pop(play)  # remove card from hand, store name
         value = get_card_value(computer, play_name)  # function for getting the value of a card
-        return value
+        return int(value)
+
+
+def is_int(val):
+    try:
+        int(val)
+    except ValueError:
+        return False
+    return True
 
 
 def get_card_value(player, card):
@@ -65,7 +100,16 @@ def get_card_value(player, card):
                 return value  # returns value to the pegging function
 
 
-def get_next_turn(player, computer, turn):  # function for switching turns
+def get_next_turn(player, p_go, computer, c_go, turn):  # function for switching turns
+    if p_go and c_go:  # if both player and computer say 'go' this will continue as normal
+        if player == turn:  # if it's currently the player's turn
+            return computer  # make it the computer's turn
+        else:  # otherwise
+            return player  # make it the player's turn
+    if p_go:  # if the player has said go, return computer regardless
+        return computer
+    if c_go:  # if the computer has said go, return the player regardless
+        return player
     if player == turn:  # if it's currently the player's turn
         return computer  # make it the computer's turn
     else:  # otherwise

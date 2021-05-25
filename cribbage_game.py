@@ -6,18 +6,70 @@ WINNING = 121
 
 def main():
     deck = make_card_list()  # make a deck of cards
-    crib = []
+    crib = []  # make an empty crib list
     player_1 = 'Matt'  # input('What is your name? ')  # asks for a player's name to use during the game.
     computer = 'Computer'  # sets the computer's name to Computer
     player_hand = draw_hand(deck)  # draws cards for the player's hand
     computer_hand = draw_hand(deck)  # draws cards for the computer's hand
-    # show_player_hand(player_1, player_hand)  # shows the player's hand
+    crib_holder = determine_first_crib(player_1, computer)  # randomly determine first crib
     build_crib(player_hand, computer_hand, crib)  # clean up the crib building function. Both "players" in one
     community = draw_card(deck)  # draw the community card
-    show_player_hand(player_1, player_hand)  # show the player hand
     print('The community card is', community)  # show the community card
-    # show_player_hand(computer, computer_hand)
-    # show_player_hand('Crib', crib)
+    pegging(player_1, player_hand, computer, computer_hand, crib_holder)  # function for the pegging portion of scoring
+
+
+def determine_first_crib(player, computer):  # randomly determines who gets the first crib
+    crib = random.randint(1, 2)  # randomly choose 1 or 2
+    if crib == 1:  # if the number is 1
+        return player  # player gets the crib
+    else:  # if number is 2
+        return computer  # computer gets the crib
+
+
+def pegging(player, player_hand, computer, computer_hand, crib_holder):  # pegging function
+    peg_count = 0  # start with pegging score of 0
+    player_peg = player_hand.copy()  # make a copy of the player's hand so we can remove things from it
+    computer_peg = computer_hand.copy()  # make copy of the computer's hand
+    turn = get_next_turn(player, computer, crib_holder)  # player w/o crib goes first
+    while len(player_peg) > 0 or len(computer_peg) > 0:  # as long as there are cards in someone's hand
+        while peg_count < 31:
+            peg_count += int(play_card(player, player_peg, computer, computer_peg, turn))  # add to peg count
+            print(f'Pegging count: {peg_count}')  # print the current peg count
+            turn = get_next_turn(player, computer, turn)  # switch players
+        peg_count = 0  # reset pegging count after reaching 31
+
+
+def play_card(player, player_hand, computer, computer_hand, turn):  # playing cards in pegging sequence
+    if turn == player:  # if it's the player's turn
+        for num, card in enumerate(player_hand, start=1):  # show numbered list of cards
+            print(f'{num}. {card}')
+        play = int(input(f'{player}, choose a card to play: '))  # ask for card to play
+        play_name = player_hand.pop(play - 1)  # remove card from hand, store name
+        value = get_card_value(player, play_name)  # function for getting the value of a card
+        return value
+    else:  # TODO make this smarter, as well
+        play = random.randint(0, len(computer_hand) - 1)  # randomly draws a card to play from computer's hand
+        play_name = computer_hand.pop(play)  # remove card from hand, store name
+        value = get_card_value(computer, play_name)  # function for getting the value of a card
+        return value
+
+
+def get_card_value(player, card):
+    with open('deck_of_cards.csv') as f:  # opens the csv file
+        cards = csv.DictReader(f)  # reads the csv file as dictionary
+        for line in cards:  # for each line of the csv
+            name = line['Name']  # assign name to the key for each item in the 'Name' column
+            value = line['Value']  # assign value to the key for each item in the 'Value' column
+            if name == card:  # looks up the name of the card drawn, returns the associated value
+                print(f'{player} played {name} for {value} points')  # displays the player, card, and value
+                return value  # returns value to the pegging function
+
+
+def get_next_turn(player, computer, turn):  # function for switching turns
+    if player == turn:  # if it's currently the player's turn
+        return computer  # make it the computer's turn
+    else:  # otherwise
+        return player  # make it the player's turn
 
 
 def build_crib(player_hand, computer_hand, crib):

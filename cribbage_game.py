@@ -34,35 +34,33 @@ def pegging(player, player_hand, computer, computer_hand, crib_holder):  # peggi
     computer_peg = computer_hand.copy()  # make copy of the computer's hand
     turn = get_next_turn(player, False, computer, False, crib_holder)  # player w/o crib goes first
     while len(player_peg) > 0 or len(computer_peg) > 0:  # as long as there are cards in someone's hand
-        while peg_count < 31:
-            """
-            Somewhere in this loop I need a way to keep track of 'go' values
-            Brainstorm:
-            player_go = False (set to true if the player returns go)
-            computer_go = False (set to true if the computer returns go)
-            While both are False, loop keeps going. If both are true, loop resets
-            If player or computer flagged True, their turns are skipped until both True
-            """
-            player_go = False
-            computer_go = False
-            while not player_go or not computer_go:
-                peg_return = play_card(player, player_peg, computer, computer_peg, turn)  # return int or 'go'
-                if type(peg_return) == str:  # checks for 'go' returned by player
-                    print(f'{turn} says "Go"')  # announces 'go'
-                    if turn == player:
-                        player_go = True
-                    else:
-                        computer_go = True
-                else:
-                    peg_count += peg_return  # if a card was returned, adds value to peg count
-                print('--------------------------')
-                print(f'Pegging count: {peg_count}')  # print the current peg count
-                print('--------------------------')
-                turn = get_next_turn(player, player_go, computer, computer_go, turn)  # switch players
-        peg_count = 0  # reset pegging count after reaching 31
+        player_go = False  # flag for whether the player has said 'go'
+        computer_go = False  # flag for whether the computer has said 'go'
+        while not player_go or not computer_go:  # continue as long as at least one player hasn't said 'go'
+            peg_return = play_card(player, player_peg, computer, computer_peg, turn, peg_count)  # return int or 'go'
+            if type(peg_return) == str:  # checks for 'go' returned by player
+                print(f'{turn} says "Go"')  # announces 'go'
+                if turn == player:  # if the player returns go
+                    player_go = True  # mark go flag for player
+                else:  # if the computer says go
+                    computer_go = True  # mark go flag for computer
+            else:
+                peg_count += peg_return  # if a card was returned, adds value to peg count
+            if peg_count == 31:  # if the pegging count reaches 31
+                print(f'{turn} gets 31 for two points.')  # award two points to the player who hit 31
+                peg_count = 0  # reset the pegging count
+            print('--------------------------')
+            print(f'Pegging count: {peg_count}')  # print the current peg count
+            print('--------------------------')
+            turn = get_next_turn(player, player_go, computer, computer_go, turn)  # switch players
+            if len(player_peg) == 0:  # if the player is out of cards
+                player_go = True  # automatically say 'go'
+            if len(computer_peg) == 0:  # if the computer is out of cards
+                computer_go = True  # automatically say 'go'
+        peg_count = 0  # reset pegging count if both players say go
 
 
-def play_card(player, player_hand, computer, computer_hand, turn):  # playing cards in pegging sequence
+def play_card(player, player_hand, computer, computer_hand, turn, peg):  # playing cards in pegging sequence
     if turn == player:  # if it's the player's turn
         for num, card in enumerate(player_hand, start=1):  # show numbered list of cards
             print(f'{num}. {card}')
@@ -75,26 +73,35 @@ def play_card(player, player_hand, computer, computer_hand, turn):  # playing ca
         else:  # if the player inputs a string
             return 'Go'  # returns 'go'
     else:  # TODO make this smarter, as well
-        play = random.randint(0, len(computer_hand) - 1)  # randomly draws a card to play from computer's hand
-        play_name = computer_hand.pop(play)  # remove card from hand, store name
-        value = get_card_value(computer, play_name)  # function for getting the value of a card
-        return int(value)
+        # open spreadsheet, cycle through hand, if card can be played, play it. If no cards can be played, say go
+        with open('deck_of_cards.csv') as f:  # opens the csv file
+            deck = csv.DictReader(f)  # stack of cards from csv is called deck
+            for card in computer_hand:  # look through each card in the hand
+                for cards in deck:  # look at deck spreadsheet
+                    name = cards['Name']
+                    value = cards['Value']
+                    if card == name:  # find the card in the name column of the spreadsheet
+                        if int(value) + peg <= 31:  # if the value of the card can be added to peg count
+                            play_name = computer_hand.pop(computer_hand.index(card))  # remove card from hand
+                            value = get_card_value(computer, play_name)  # play the card
+                            return int(value)  # return the value
+            return 'Go'  # if no cards can be played, say 'go'
 
 
-def is_int(val):
+def is_int(val):  # this is to check whether the player or computer returns a str or in
     try:
-        int(val)
-    except ValueError:
-        return False
-    return True
+        int(val)  # tries to make the returned value into an integer
+    except ValueError:  # if it returns an error, it can only be a string
+        return False  # return false
+    return True  # if it does not return an error, it must be an integer
 
 
 def get_card_value(player, card):
     with open('deck_of_cards.csv') as f:  # opens the csv file
-        cards = csv.DictReader(f)  # reads the csv file as dictionary
-        for line in cards:  # for each line of the csv
-            name = line['Name']  # assign name to the key for each item in the 'Name' column
-            value = line['Value']  # assign value to the key for each item in the 'Value' column
+        deck = csv.DictReader(f)  # reads the csv file as dictionary
+        for cards in deck:  # for each line of the csv
+            name = cards['Name']  # assign name to the key for each item in the 'Name' column
+            value = cards['Value']  # assign value to the key for each item in the 'Value' column
             if name == card:  # looks up the name of the card drawn, returns the associated value
                 print(f'{player} played {name} for {value} points')  # displays the player, card, and value
                 return value  # returns value to the pegging function
@@ -163,9 +170,9 @@ def random_card(card_list):  # function for picking a number to
 def make_card_list():  # creates a list of all cards from the csv file
     full_list = []  # start with an empty list
     with open('deck_of_cards.csv') as f:  # opens the csv file
-        cards = csv.DictReader(f)  # reads the csv file as dictionary
-        for line in cards:  # for each line of the csv
-            name = line['Name']  # assign name to the key for each item in the 'Name' column
+        deck = csv.DictReader(f)  # reads the csv file as dictionary
+        for cards in deck:  # for each line of the csv
+            name = cards['Name']  # assign name to the key for each item in the 'Name' column
             full_list.append(name)  # add the names of each card to the list
     return full_list  # return the full list of cards to the main function
 

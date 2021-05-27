@@ -1,5 +1,6 @@
 import csv
 import random
+from itertools import combinations
 
 WINNING = 121
 PEG_MAX = 31
@@ -12,17 +13,20 @@ def main():
     player = 'Matt'  # input('What is your name? ')  # asks for a player's name to use during the game.
     computer = 'Computer'  # sets the computer's name to Computer
     crib_holder = determine_first_crib(player, computer)  # randomly determine first crib
+    round_of_play = 1
     while True:
         deck = make_card_list()  # make a deck of cards
         player_hand = draw_hand(deck)  # draws cards for the player's hand
         computer_hand = draw_hand(deck)  # draws cards for the computer's hand
-        show_scores(player, player_score, computer_score)
+        show_round(round_of_play)
         build_crib(player_hand, computer_hand, crib, crib_holder)  # discard from hand to crib
         community = draw_card(deck)  # draw the community card
-        show_community_card(community)  # shows the community card
+        show_community_card(community, player, player_score, computer_score, crib_holder)  # shows the community card
         pegging(player, player_hand, player_score, computer, computer_hand, computer_score, crib_holder)  # pegging
         count_hands(player, player_score, player_hand, computer, computer_score, computer_hand, community, crib_holder, crib)
         crib_holder = get_next_turn(player, False, computer, False, crib_holder)  # swap crib holder for the next turn
+        round_of_play += 1  # add to the round counter
+        print()
 
 
 def count_hands(player, player_score, player_hand, computer, computer_score, computer_hand, community, crib_holder, crib):
@@ -39,6 +43,183 @@ def count_hands(player, player_score, player_hand, computer, computer_score, com
     :param crib: list of cards in the crib
     :return:
     """
+    if crib_holder == computer:  # if the computer has the crib, the player counts first
+        print(f"{player}'s hand: ")
+        player_score.append(hand_score(player, player_hand, community, False))
+        show_scores(player, player_score, computer_score)
+        print("Computer's hand: ")
+        computer_score.append(hand_score(computer, computer_hand, community, False))
+        show_scores(player, player_score, computer_score)
+        print("Computer's crib: ")
+        computer_score.append(hand_score(computer, crib, community, True))
+        show_scores(player, player_score, computer_score)
+    if crib_holder == player:  # if the player has the crib, the computer counts first
+        print(f"Computer's hand: ")
+        computer_score.append(hand_score(computer, computer_hand, community, False))
+        show_scores(player, player_score, computer_score)
+        print(f"{player}'s hand: ")
+        player_score.append(hand_score(player, player_hand, community, False))
+        show_scores(player, player_score, computer_score)
+        print("Computer's crib: ")
+        player_score.append(hand_score(player, crib, community, True))
+        show_scores(player, player_score, computer_score)
+
+
+def hand_score(player, hand, community, crib):
+    """
+    Counts up all of the possible points in the hand given
+    :param player: name of player/computer holding the hand
+    :param hand: list of cards in the hand
+    :param community: name of the community card
+    :param crib: whether or not this is the crib
+    :return: returns a total number of points to be appended to the player's hand
+    """
+    fifteen = int(hand_fifteen(hand, community))
+    groups = int(hand_group(hand, community))
+    runs = int(hand_runs(hand, community))
+    flush = int(hand_flush(hand, community, crib))
+    nibs = int(hand_nibs(hand, community))
+    total = fifteen + groups + runs + flush + nibs
+    print(f'{player} scored a total of {total} points.')
+    print()
+    return int(total)
+
+
+def hand_runs(hand, community):
+    """
+    Count up and return the number of points earned from runs in the hand
+    :param hand: list of cards in the hand
+    :param community: name of the community card
+    :return: number of points awarded
+    """
+    orders = []  # empty list of orders
+    comm_value = int(get_card_order(community))  # get the order of community card
+    orders.append(comm_value)  # add it to the list
+    for card in hand:  # go through all cards in hand
+        value = int(get_card_order(card))  # get their orders
+        orders.append(value)  # add them to the list
+    if hand_run_n(orders, 5):  # check for run of 5
+        print('Run of 5 for 5 points')  # if there is a run of 5, announce it
+        return int(hand_run_n(orders, 5))  # return the points
+    if hand_run_n(orders, 4):  # if no runs of 5, check for runs of 4
+        num = int(hand_run_n(orders, 4))  # if there are runs of 4, count how many
+        print(f'{num} run(s) of 4 for {num * 4} points.')  # announce number of runs and points
+        return int(num * 4)  # return number of points
+    if hand_run_n(orders, 3):  # of no runs of 5 or 4, check for runs of 3
+        num = int(hand_run_n(orders, 3))  # if run of three, count how many
+        print(f'{num} run(s) of 3 for {num * 3} points.')  # announce number of run and points
+        return int(num * 3)  # return number of points
+    return 0
+
+
+def hand_run_n(lst, n):
+    count = 0
+    run = list(combinations(lst, n))
+    for groups in run:
+        if check_consecutive(groups):
+            count += 1
+    if count == 0:
+        return False
+    else:
+        return count
+
+
+def hand_group(hand, community):
+    """
+    Takes in all of the cards in the hand and community, puts them into all possible combinations of 2, and checks
+    for pairs
+    :param hand: list of cards in hand
+    :param community: name of community card
+    :return: number of points awarded
+    """
+    orders = []
+    pair_count = 0
+    comm_order = int(get_card_order(community))
+    orders.append(comm_order)
+    for card in hand:
+        order = int(get_card_order(card))
+        orders.append(order)
+    combos = list(combinations(orders, 2))
+    for pairs in combos:
+        if pairs[0] == pairs[1]:
+            pair_count += 1
+    if pair_count == 0:
+        return int(0)
+    else:
+        print(f'{pair_count} total pair(s) for {pair_count * 2} points.')
+        return int(pair_count * 2)
+
+
+def hand_fifteen(hand, community):
+    """
+    Checks all possible combinations of cards to make 15 points. Returns the value and reports the number
+    :param hand: list of cards in the hand
+    :param community: name of community card
+    :return: number of points earned
+    """
+    values = []  # empty list of values
+    fifteen_count = 0  # number of 15s counted
+    comm_value = int(get_card_value(community))  # find the value of the community card
+    values.append(comm_value)  # adds the community card to the list
+    for card in hand:  # goes through all cards in hand
+        value = int(get_card_value(card))  # gets the value of the card
+        values.append(value)  # adds the value to the list
+    fifteens_list = [sum(comb) for comb in combinations(values, 2)]  # all possible sums of two numbers
+    fifteens_list += [sum(comb) for comb in combinations(values, 3)]  # all possible sums of three numbers
+    fifteens_list += [sum(comb) for comb in combinations(values, 4)]  # all possible sums of four numbers
+    fifteens_list += [sum(comb) for comb in combinations(values, 5)]  # all possible sums of 5 numbers
+    for num in fifteens_list:  # goes through the list of sums
+        if int(num) == 15:  # if there is a 15
+            fifteen_count += 1  # adds one to the counter
+    if fifteen_count == 0:  # if there are no 15s
+        return 0  # return zero points
+    else:  # if there are 15s
+        print(f'{fifteen_count} 15(s) for {fifteen_count * 2} points')  # report number of 15s
+        return int(fifteen_count * 2)  # return the points earned
+
+
+def hand_nibs(hand, community):
+    """
+    Checks the cards in the hand for 'nibs' meaning a jack in hand has same suit as community card
+    :param hand: list of cards in hand
+    :param community: name of community card
+    :return: 1 point if player has nibs, 0 points if player does not
+    """
+    comm_suit = get_card_suit(community)  # get the suit of the community card
+    for cards in hand:  # check all cards in the hand
+        order = int(get_card_order(cards))  # get the order of the card. Jacks are the 11th card
+        if order == 11:  # if the card is a jack
+            suit = get_card_suit(cards)  # check the suit of the card
+            if suit == comm_suit:  # if the suit matches that of the community cards
+                print('Nibs for 1 point')  # declare nibs
+                return int(1)  # return a point
+    return int(0)
+
+
+def hand_flush(hand, community, crib):
+    """
+    Checks if all cards have the same suit. Only allows a 5-card flush for crib
+    :param hand: cards in the hand
+    :param community: community card
+    :param crib: whether the hand in play is the crib (True or False)
+    :return: return 0, 4, or 5 points scored, depending on flush
+    """
+    hand_suits = []  # start with an empty list
+    comm_suit = get_card_suit(community)  # get suit for community card
+    for cards in hand:  # cycle through all cards in the hand
+        suit = get_card_suit(cards)  # get the suit of the card
+        hand_suits.append(suit)  # add the suit to the list
+    if crib:  # if crib == True, requires a 5-card flush
+        if comm_suit == hand_suits[0] == hand_suits[1] == hand_suits[2] == hand_suits[3]:  # all cards have same suit
+            print('Flush for 5 points')
+            return int(5)  # give crib holder 5 points
+    if comm_suit == hand_suits[0] == hand_suits[1] == hand_suits[2] == hand_suits[3]:  # all cards have same suit
+        print('Flush for 5 points')
+        return int(5)  # give 5 points if all 5 cards match
+    if hand_suits[0] == hand_suits[1] == hand_suits[2] == hand_suits[3]:  # if all but community card have same suit
+        print('Flush for 4 points')
+        return int(4)  # gives 4 points
+    return int(0)  # if there is no flush, returns 0
 
 
 def add_scores(points, player, player_score, computer_score, turn):
@@ -272,6 +453,7 @@ def show_scores(player, player_list, computer_list):
     computer_score = int(score_from_list(computer_list))  # call function to get score for computer
     print(f"{player}'s score: {player_score}.")  # display the player's name and score
     print(f"Computer's score: {computer_score}.")  # display the computer's score
+    print()  # add a line for clarity when playing
     check_for_win(player, player_score, computer_score)  # check of there's a winner
 
 
@@ -305,10 +487,18 @@ def score_from_list(lst):
     return score  # return the score
 
 
-def show_community_card(community):
+def show_community_card(community, player, player_score, computer_score, crib_holder):
     print('---------------------------------')
     print(f'The community card is {community}')  # show the community card
     print('---------------------------------')
+    nobs = int(get_card_order(community))  # checking for nobs
+    if nobs == 11:  # if the card is a jack
+        if crib_holder == player:
+            print(f'{player} gets nobs for 2 points.')
+            player_score.append(2)
+        else:
+            print('Computer gets nobs for 2 points.')
+            computer_score.append(2)
 
 
 def determine_first_crib(player, computer):  # randomly determines who gets the first crib
@@ -414,7 +604,7 @@ def play_card(player, player_hand, computer, computer_hand, turn, peg_list, peg)
         if is_int(play):  # checks if the player input a value that can be an integer
             play_name = player_hand.pop(int(play) - 1)  # remove card from hand, store name
             peg_list.append(play_name)  # add the card to the pegging list
-            value = get_card_value(player, play_name)  # function for getting the value of a card
+            value = pegging_play_value(player, play_name)  # function for getting the value of a card
             return int(value)  # return the integer value of the card
         else:  # if the player inputs a string
             return 'Go'  # returns 'go'
@@ -429,7 +619,7 @@ def play_card(player, player_hand, computer, computer_hand, turn, peg_list, peg)
                     if card == name:  # find the card in the name column of the spreadsheet
                         if int(value) + peg <= PEG_MAX:  # if the value of the card can be added to peg count
                             play_name = computer_hand.pop(computer_hand.index(card))  # remove card from hand
-                            value = get_card_value(computer, play_name)  # play the card
+                            value = pegging_play_value(computer, play_name)  # play the card
                             peg_list.append(play_name)  # adds the card to the list of cards played
                             return int(value)  # return the value
             return 'Go'  # if no cards can be played, say 'go'
@@ -448,7 +638,7 @@ def is_int(val):
     return True  # if it does not return an error, it must be an integer
 
 
-def get_card_value(player, card):
+def pegging_play_value(player, card):
     """
     Reads the name of the card from a list, gets back the value of the card
     :param player: Name of player
@@ -462,6 +652,21 @@ def get_card_value(player, card):
             value = cards['Value']  # assign value to the key for each item in the 'Value' column
             if name == card:  # looks up the name of the card drawn, returns the associated value
                 print(f'{player} played {name} for {value}')  # displays the player, card, and value
+                return value  # returns value of card
+
+
+def get_card_value(card):
+    """
+    Reads the name of the card from a list, gets back the value of the card
+    :param card: Name of card
+    :return: value of card
+    """
+    with open('deck_of_cards.csv') as f:  # opens the csv file
+        deck = csv.DictReader(f)  # reads the csv file as dictionary
+        for cards in deck:  # for each line of the csv
+            name = cards['Name']  # assign name to the key for each item in the 'Name' column
+            value = cards['Value']  # assign value to the key for each item in the 'Value' column
+            if name == card:  # looks up the name of the card drawn, returns the associated value
                 return value  # returns value of card
 
 
@@ -563,9 +768,15 @@ def show_player_hand(player, hand):  # takes the name of the player and the list
     :param hand: list of cards in the hand
     :return: cards are printed
     """
-    print(f'{player}, your cards are:')  
+    print(f'{player}, your cards are:')
     for cards in hand:  # loop through cards in player's hand
         print('    ' + cards)  # print a space to indent and the name of the card
+
+
+def show_round(play):
+    print('---------------')
+    print(f'    Round {play}    ')
+    print('---------------')
 
 
 def draw_hand(deck):

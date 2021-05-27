@@ -10,7 +10,7 @@ def main():
     player_score = []  # empty list to serve as a place where we can store all points awarded to player
     computer_score = []  # empty list to serve as a place where we can store all points awarded to the computer
     crib = []  # make an empty crib list
-    player = 'Matt'  # input('What is your name? ')  # asks for a player's name to use during the game.
+    player = input('What is your name? ')  # asks for a player's name to use during the game.
     computer = 'Computer'  # sets the computer's name to Computer
     crib_holder = determine_first_crib(player, computer)  # randomly determine first crib
     round_of_play = 1
@@ -45,22 +45,40 @@ def count_hands(player, player_score, player_hand, computer, computer_score, com
     """
     if crib_holder == computer:  # if the computer has the crib, the player counts first
         print(f"{player}'s hand: ")
+        for cards in player_hand:
+            print('   ' + cards)
+        print('   ' + community)
         player_score.append(hand_score(player, player_hand, community, False))
         show_scores(player, player_score, computer_score)
         print("Computer's hand: ")
+        for cards in computer_hand:
+            print('   ' + cards)
+        print('   ' + community)
         computer_score.append(hand_score(computer, computer_hand, community, False))
         show_scores(player, player_score, computer_score)
         print("Computer's crib: ")
+        for cards in crib:
+            print('   ' + cards)
+        print('   ' + community)
         computer_score.append(hand_score(computer, crib, community, True))
         show_scores(player, player_score, computer_score)
     if crib_holder == player:  # if the player has the crib, the computer counts first
         print(f"Computer's hand: ")
+        for cards in computer_hand:
+            print('   ' + cards)
+        print('   ' + community)
         computer_score.append(hand_score(computer, computer_hand, community, False))
         show_scores(player, player_score, computer_score)
         print(f"{player}'s hand: ")
+        for cards in player_hand:
+            print('   ' + cards)
+        print('   ' + community)
         player_score.append(hand_score(player, player_hand, community, False))
         show_scores(player, player_score, computer_score)
-        print("Computer's crib: ")
+        print(f"{player}'s crib: ")
+        for cards in crib:
+            print('   ' + cards)
+        print('   ' + community)
         player_score.append(hand_score(player, crib, community, True))
         show_scores(player, player_score, computer_score)
 

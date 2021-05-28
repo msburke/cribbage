@@ -569,8 +569,7 @@ def pegging(player, player_hand, player_score, computer, computer_hand, computer
                 peg_count = 0  # reset the pegging count
                 peg_list = []  # clears the peg list for the next round
                 player_go = False  # reset player go to False
-                computer_go = False  # reset computer go to False
-                last_card(turn, player, player_score, computer_score)
+                computer_go = False  # reset computer go to False           
             show_peg_count(peg_count)
             show_scores(player, player_score, computer_score)
             show_pile(peg_list)

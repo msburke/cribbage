@@ -9,7 +9,6 @@ PEG_MAX = 31
 def main():
     player_score = []  # empty list to serve as a place where we can store all points awarded to player
     computer_score = []  # empty list to serve as a place where we can store all points awarded to the computer
-    crib = []  # make an empty crib list
     player = input('What is your name? ')  # asks for a player's name to use during the game.
     computer = 'Computer'  # sets the computer's name to Computer
     crib_holder = determine_first_crib(player, computer)  # randomly determine first crib
@@ -18,6 +17,7 @@ def main():
         deck = make_card_list()  # make a deck of cards
         player_hand = draw_hand(deck)  # draws cards for the player's hand
         computer_hand = draw_hand(deck)  # draws cards for the computer's hand
+        crib = []  # make an empty crib list
         show_round(round_of_play)
         build_crib(player_hand, computer_hand, crib, crib_holder)  # discard from hand to crib
         community = draw_card(deck)  # draw the community card
@@ -96,8 +96,8 @@ def hand_score(player, hand, community, crib):
     groups = int(hand_group(hand, community))
     runs = int(hand_runs(hand, community))
     flush = int(hand_flush(hand, community, crib))
-    nibs = int(hand_nibs(hand, community))
-    total = fifteen + groups + runs + flush + nibs
+    nobs = int(hand_nobs(hand, community))
+    total = fifteen + groups + runs + flush + nobs
     print(f'{player} scored a total of {total} points.')
     print()
     return int(total)
@@ -196,7 +196,7 @@ def hand_fifteen(hand, community):
         return int(fifteen_count * 2)  # return the points earned
 
 
-def hand_nibs(hand, community):
+def hand_nobs(hand, community):
     """
     Checks the cards in the hand for 'nibs' meaning a jack in hand has same suit as community card
     :param hand: list of cards in hand
@@ -209,7 +209,7 @@ def hand_nibs(hand, community):
         if order == 11:  # if the card is a jack
             suit = get_card_suit(cards)  # check the suit of the card
             if suit == comm_suit:  # if the suit matches that of the community cards
-                print('Nibs for 1 point')  # declare nibs
+                print('Nobs for 1 point')  # declare nobs
                 return int(1)  # return a point
     return int(0)
 
@@ -512,10 +512,10 @@ def show_community_card(community, player, player_score, computer_score, crib_ho
     nobs = int(get_card_order(community))  # checking for nobs
     if nobs == 11:  # if the card is a jack
         if crib_holder == player:
-            print(f'{player} gets nobs for 2 points.')
+            print(f'{player} gets nibs for 2 points.')
             player_score.append(2)
         else:
-            print('Computer gets nobs for 2 points.')
+            print('Computer gets nibs for 2 points.')
             computer_score.append(2)
 
 

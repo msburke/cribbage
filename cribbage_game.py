@@ -570,6 +570,7 @@ def pegging(player, player_hand, player_score, computer, computer_hand, computer
                 peg_list = []  # clears the peg list for the next round
                 player_go = False  # reset player go to False
                 computer_go = False  # reset computer go to False
+                last_card(turn, player, player_score, computer_score)
             show_peg_count(peg_count)
             show_scores(player, player_score, computer_score)
             show_pile(peg_list)
@@ -578,6 +579,17 @@ def pegging(player, player_hand, player_score, computer, computer_hand, computer
                 player_go = True  # automatically say 'go'
             if len(computer_peg) == 0:  # if the computer is out of cards
                 computer_go = True  # automatically say 'go'
+            if player_go and computer_go:
+                last_card(turn, player, player_score, computer_score)
+
+
+def last_card(turn, player, player_score, computer_score):
+    if turn == player:
+        print(f'{player} gets 1 point for last card')
+        player_score.append(1)
+    else:
+        print('Computer gets 1 point for last card')
+        computer_score.append(1)
 
 
 def show_pile(pile):
